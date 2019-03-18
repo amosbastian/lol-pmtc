@@ -1,6 +1,9 @@
 <template>
   <div class="home">
-    <match-history-input msg="Welcome to Your Vue.js App" />
+    <match-history-input
+      msg="Welcome to Your Vue.js App"
+      v-on:urlSubmitted="createThread($event)"
+    />
   </div>
 </template>
 
@@ -11,6 +14,11 @@ export default {
   name: 'home',
   components: {
     MatchHistoryInput
+  },
+  methods: {
+    createThread(url) {
+      console.log(url);
+    }
   }
 };
 </script>
