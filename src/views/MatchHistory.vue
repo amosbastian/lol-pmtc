@@ -22,6 +22,22 @@ export default {
     MatchHistoryInput
   },
   methods: {
+    indexToRole(index) {
+      const roles = {
+        0: 'TOP',
+        1: 'JNG',
+        2: 'MID',
+        3: 'BOT',
+        4: 'SUP'
+      };
+      return roles[index];
+    },
+    getTeamKDA(team) {
+      const totalKills = team.reduce((a, b) => a + (b.stats.kills || 0), 0);
+      const totalDeaths = team.reduce((a, b) => a + (b.stats.deaths || 0), 0);
+      const totalAssists = team.reduce((a, b) => a + (b.stats.assists || 0), 0);
+      return `${totalKills}-${totalDeaths}-${totalAssists}`;
+    },
     getFormattedBans(team) {
       let banString = '';
       team.bans.forEach(ban => {
@@ -34,7 +50,18 @@ export default {
         banString += `[${championName}](#c-${championName})${championDivider}`;
       });
 
-      console.log(banString);
+      return banString;
+    },
+    getFormattedTable(players) {
+      const playersTeamOne = players.slice(0, 5);
+      const playersTeamTwo = players.slice(5);
+      const kdaTeamOne = this.getTeamKDA(playersTeamOne);
+      const kdaTeamTwo = this.getTeamKDA(playersTeamTwo);
+
+      playersTeamOne.map((playerOne, index) => {
+        const playerTwo = playersTeamTwo[index];
+        console.log(playerOne, playerTwo);
+      });
     },
     async handleGameData(gameUrl) {
       const response = await axios.get(
@@ -45,7 +72,8 @@ export default {
       const [teamOne, teamTwo] = teams;
       teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
       teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
-      this.getFormattedBans(teamOne);
+      // this.getFormattedBans(teamOne);
+      this.getFormattedTable(participants);
     },
     async createThread(url) {
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
