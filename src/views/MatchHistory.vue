@@ -44,7 +44,15 @@ export default {
       }`;
     },
     getFormattedChampion(champion) {
-      return `[${champion}](#c-${champion})`;
+      const championName = champion.replace(' ', '');
+      return `[${championName}](#c-${championName})`;
+    },
+    getChampionName(championId) {
+      return this.getFormattedChampion(
+        this.champions
+          .find(champion => parseInt(champion.key) === championId)
+          .name.toLowerCase()
+      );
     },
     getFormattedBans(team) {
       let banString = '';
@@ -72,16 +80,8 @@ export default {
 
       teamOnePlayers.map((playerOne, index) => {
         const playerTwo = teamTwoPlayers[index];
-        const championOne = this.getFormattedChampion(
-          this.champions
-            .find(champion => parseInt(champion.key) === playerOne.championId)
-            .name.toLowerCase()
-        );
-        const championTwo = this.getFormattedChampion(
-          this.champions
-            .find(champion => parseInt(champion.key) === playerTwo.championId)
-            .name.toLowerCase()
-        );
+        const championOne = this.getChampionName(playerOne.championId);
+        const championTwo = this.getChampionName(playerTwo.championId);
         const role = this.indexToRole(index);
 
         const playerOneName = playerIdentities
@@ -102,6 +102,7 @@ export default {
         tableBody += `|${playerOneName} ${championOne}|${playerOneKDA}|${role}|${playerTwoKDA}|${championTwo} ${playerTwoName}|\n`;
       });
       const formattedTable = tableHeader + tableBody;
+      console.log(formattedTable);
       return formattedTable;
     },
     async handleGameData(gameUrl) {
