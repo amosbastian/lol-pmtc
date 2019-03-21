@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <match-history-input v-on:urlSubmitted="createThread($event)"/>
+    <match-history-input v-on:urlSubmitted="createThread($event)" />
   </div>
 </template>
 
@@ -101,7 +101,7 @@ export default {
       const formattedTable = tableHeader + tableBody;
       return formattedTable;
     },
-    convertEventType(event) {
+    getMonsterName(event) {
       const eventTypes = {
         AIR_DRAGON: '[C](#mt-cloud)',
         WATER_DRAGON: '[M](#mt-ocean)',
@@ -115,16 +115,16 @@ export default {
       }
       return eventTypes[event.monsterType];
     },
-    formatEvents(events) {
-      let eventString = '';
+    formatMonsters(events) {
+      let monsterString = '';
       events.forEach(event => {
-        const eventName = this.convertEventType(event);
-        eventString += `${eventName}^${event.order} `;
+        const monsterName = this.getMonsterName(event);
+        monsterString += `${monsterName}^${event.order} `;
       });
 
-      return eventString;
+      return monsterString;
     },
-    async getEvents(teamOne, teamTwo, timelineUrl) {
+    async getEpicMonsters(teamOne, teamTwo, timelineUrl) {
       const response = await axios.get(
         `${'https://cors-anywhere.herokuapp.com/'}${timelineUrl}`
       );
@@ -137,8 +137,8 @@ export default {
       const teamTwoEvents = importantEvents.filter(event => event.killerId > 5);
 
       return [
-        this.formatEvents(teamOneEvents),
-        this.formatEvents(teamTwoEvents)
+        this.formatMonsters(teamOneEvents),
+        this.formatMonsters(teamTwoEvents)
       ];
     },
     async handleGameData(gameUrl, timelineUrl) {
@@ -154,12 +154,17 @@ export default {
       teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
       teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
 
-      const gameEvents = this.getEvents(teamOne, teamTwo, timelineUrl);
-      // const scoreboard = this.getScoreboard(
-      //   teamOne.name,
-      //   teamTwo.name,
-      //   participants
-      // );
+      const [teamOneMonsters, teamTwoMonsters] = await this.getEpicMonsters(
+        teamOne,
+        teamTwo,
+        timelineUrl
+      );
+      const [teamOneBans, teamTwoBans] = this.getBans(teamOne, teamTwo);
+      const scoreboard = this.getScoreboard(
+        teamOne.name,
+        teamTwo.name,
+        participants
+      );
     },
     async createThread(url) {
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
