@@ -15,7 +15,8 @@ export default {
   name: 'home',
   data() {
     return {
-      champions: []
+      champions: [],
+      playerIdentities: []
     };
   },
   components: {
@@ -43,6 +44,13 @@ export default {
         player.stats.assists
       }`;
     },
+    getPlayerName(playerId) {
+      return this.playerIdentities
+        .find(player => player.participantId === playerId)
+        .player.summonerName.split(' ')
+        .slice(1)
+        .join(' ');
+    },
     getFormattedChampion(champion) {
       const championName = champion.replace(' ', '');
       return `[${championName}](#c-${championName})`;
@@ -69,7 +77,7 @@ export default {
 
       return banString;
     },
-    getFormattedTable(teamOneName, teamTwoName, players, playerIdentities) {
+    getFormattedTable(teamOneName, teamTwoName, players) {
       const teamOnePlayers = players.slice(0, 5);
       const teamTwoPlayers = players.slice(5);
       const teamOneKDA = this.getTeamKDA(teamOnePlayers);
@@ -80,21 +88,13 @@ export default {
 
       teamOnePlayers.map((playerOne, index) => {
         const playerTwo = teamTwoPlayers[index];
-        const championOne = this.getChampionName(playerOne.championId);
-        const championTwo = this.getChampionName(playerTwo.championId);
         const role = this.indexToRole(index);
 
-        const playerOneName = playerIdentities
-          .find(player => player.participantId === playerOne.participantId)
-          .player.summonerName.split(' ')
-          .slice(1)
-          .join(' ');
+        const championOne = this.getChampionName(playerOne.championId);
+        const championTwo = this.getChampionName(playerTwo.championId);
 
-        const playerTwoName = playerIdentities
-          .find(player => player.participantId === playerTwo.participantId)
-          .player.summonerName.split(' ')
-          .slice(1)
-          .join(' ');
+        const playerOneName = this.getPlayerName(playerOne.participantId);
+        const playerTwoName = this.getPlayerName(playerTwo.participantId);
 
         const playerOneKDA = this.getPlayerKDA(playerOne);
         const playerTwoKDA = this.getPlayerKDA(playerTwo);
@@ -102,7 +102,6 @@ export default {
         tableBody += `|${playerOneName} ${championOne}|${playerOneKDA}|${role}|${playerTwoKDA}|${championTwo} ${playerTwoName}|\n`;
       });
       const formattedTable = tableHeader + tableBody;
-      console.log(formattedTable);
       return formattedTable;
     },
     async handleGameData(gameUrl) {
@@ -111,16 +110,14 @@ export default {
       );
       const gameData = response.data;
       const { participantIdentities, teams, participants } = gameData;
+
+      this.playerIdentities = participantIdentities;
+
       const [teamOne, teamTwo] = teams;
       teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
       teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
       // this.getFormattedBans(teamOne);
-      this.getFormattedTable(
-        teamOne.name,
-        teamTwo.name,
-        participants,
-        participantIdentities
-      );
+      this.getFormattedTable(teamOne.name, teamTwo.name, participants);
     },
     async createThread(url) {
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
