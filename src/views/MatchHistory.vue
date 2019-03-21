@@ -1,9 +1,6 @@
 <template>
   <div class="home">
-    <match-history-input
-      msg="Welcome to Your Vue.js App"
-      v-on:urlSubmitted="createThread($event)"
-    />
+    <match-history-input v-on:urlSubmitted="createThread($event)"/>
   </div>
 </template>
 
@@ -77,7 +74,7 @@ export default {
 
       return banString;
     },
-    getFormattedTable(teamOneName, teamTwoName, players) {
+    getScoreboard(teamOneName, teamTwoName, players) {
       const teamOnePlayers = players.slice(0, 5);
       const teamTwoPlayers = players.slice(5);
       const teamOneKDA = this.getTeamKDA(teamOnePlayers);
@@ -104,7 +101,47 @@ export default {
       const formattedTable = tableHeader + tableBody;
       return formattedTable;
     },
-    async handleGameData(gameUrl) {
+    convertEventType(event) {
+      const eventTypes = {
+        AIR_DRAGON: '[C](#mt-cloud)',
+        WATER_DRAGON: '[M](#mt-ocean)',
+        FIRE_DRAGON: '[I](#mt-infernal)',
+        EARTH_DRAGON: '[M](#mt-mountain)',
+        BARON_NASHOR: '[B](#mt-barons)',
+        RIFTHERALD: '[H](#mt-herald)'
+      };
+      if (event.monsterType === 'DRAGON') {
+        return eventTypes[event.monsterSubType];
+      }
+      return eventTypes[event.monsterType];
+    },
+    formatEvents(events) {
+      let eventString = '';
+      events.forEach(event => {
+        const eventName = this.convertEventType(event);
+        eventString += `${eventName}^${event.order} `;
+      });
+
+      return eventString;
+    },
+    async getEvents(teamOne, teamTwo, timelineUrl) {
+      const response = await axios.get(
+        `${'https://cors-anywhere.herokuapp.com/'}${timelineUrl}`
+      );
+      const allEvents = response.data.frames.map(frame => frame.events).flat();
+      const importantEvents = allEvents.filter(
+        event => event.type === 'ELITE_MONSTER_KILL'
+      );
+      importantEvents.forEach((event, index) => (event.order = index + 1));
+      const teamOneEvents = importantEvents.filter(event => event.killerId < 6);
+      const teamTwoEvents = importantEvents.filter(event => event.killerId > 5);
+
+      return [
+        this.formatEvents(teamOneEvents),
+        this.formatEvents(teamTwoEvents)
+      ];
+    },
+    async handleGameData(gameUrl, timelineUrl) {
       const response = await axios.get(
         `${'https://cors-anywhere.herokuapp.com/'}${gameUrl}`
       );
@@ -116,8 +153,13 @@ export default {
       const [teamOne, teamTwo] = teams;
       teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
       teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
-      // this.getFormattedBans(teamOne);
-      this.getFormattedTable(teamOne.name, teamTwo.name, participants);
+
+      const gameEvents = this.getEvents(teamOne, teamTwo, timelineUrl);
+      // const scoreboard = this.getScoreboard(
+      //   teamOne.name,
+      //   teamTwo.name,
+      //   participants
+      // );
     },
     async createThread(url) {
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
@@ -136,7 +178,7 @@ export default {
       console.log(gameUrl);
       console.log(timelineUrl);
 
-      this.handleGameData(gameUrl);
+      this.handleGameData(gameUrl, timelineUrl);
     }
   },
   async created() {
