@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <match-history-input v-on:urlSubmitted="createThread($event)" />
+    <match-history-input v-on:urlSubmitted="createThread($event)"/>
   </div>
 </template>
 
@@ -35,6 +35,10 @@ export default {
       const totalDeaths = team.reduce((a, b) => a + (b.stats.deaths || 0), 0);
       const totalAssists = team.reduce((a, b) => a + (b.stats.assists || 0), 0);
       return `${totalKills}-${totalDeaths}-${totalAssists}`;
+    },
+    getTeamGold(team) {
+      const totalGold = team.reduce((a, b) => a + (b.stats.goldEarned || 0), 0);
+      return `${(totalGold / 1000).toFixed(1)}k`;
     },
     getPlayerKDA(player) {
       return `${player.stats.kills}-${player.stats.deaths}-${
@@ -124,7 +128,7 @@ export default {
 
       return monsterString;
     },
-    async getEpicMonsters(teamOne, teamTwo, timelineUrl) {
+    async getEpicMonsters(timelineUrl) {
       const response = await axios.get(
         `${'https://cors-anywhere.herokuapp.com/'}${timelineUrl}`
       );
@@ -141,7 +145,37 @@ export default {
         this.formatMonsters(teamTwoEvents)
       ];
     },
-    async handleGameData(gameUrl, timelineUrl) {
+    async getObjectives(teamOne, teamTwo, players, timelineUrl) {
+      const [teamOneMonsters, teamTwoMonsters] = await this.getEpicMonsters(
+        timelineUrl
+      );
+      const teamOneBans = this.getFormattedBans(teamOne);
+      const teamTwoBans = this.getFormattedBans(teamTwo);
+      const teamOneGold = this.getTeamGold(players.slice(0, 5));
+      const teamTwoGold = this.getTeamGold(players.slice(5));
+
+      let table =
+        '||Bans 1|Bans 2|[G](#mt-gold)|[T](#mt-towers)|D/B|\n|:--|:--:|:--:|:--:|:--:|:--:|\n';
+      table += `|**${teamOne.name}**|${teamOneBans}|${teamOneGold}|${
+        teamOne.towerKills
+      }|${teamOneMonsters}|\n`;
+      table += `|**${teamTwo.name}**|${teamTwoBans}|${teamTwoGold}|${
+        teamTwo.towerKills
+      }|${teamTwoMonsters}|`;
+
+      return table;
+    },
+    getThreadHeader(teamOne, teamTwo, gameDuration, url) {
+      const winner = teamOne.win === 'Win' ? teamOne : teamTwo;
+      const minutes = gameDuration / 60;
+
+      let header = '';
+      header += `### MATCH: [${teamOne.name} vs. ${teamTwo.name}](${url})\n`;
+      header += `**Winner: ${winner.name}** in ${Math.round(minutes)}m  \n`;
+
+      return header;
+    },
+    async handleGameData(matchHistoryUrl, gameUrl, timelineUrl) {
       const response = await axios.get(
         `${'https://cors-anywhere.herokuapp.com/'}${gameUrl}`
       );
@@ -154,17 +188,27 @@ export default {
       teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
       teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
 
-      const [teamOneMonsters, teamTwoMonsters] = await this.getEpicMonsters(
+      const threadHeader = this.getThreadHeader(
         teamOne,
         teamTwo,
+        gameData.gameDuration,
+        matchHistoryUrl
+      );
+
+      const objectives = await this.getObjectives(
+        teamOne,
+        teamTwo,
+        participants,
         timelineUrl
       );
-      const [teamOneBans, teamTwoBans] = this.getBans(teamOne, teamTwo);
+
       const scoreboard = this.getScoreboard(
         teamOne.name,
         teamTwo.name,
         participants
       );
+
+      return `${threadHeader}\n\n${objectives}\n\n${scoreboard}`;
     },
     async createThread(url) {
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
@@ -180,10 +224,9 @@ export default {
       const [, platformId, gameId, gameHash] = matchingGroups;
       const gameUrl = `${baseUrl}${platformId}/${gameId}?gameHash=${gameHash}`;
       const timelineUrl = `${baseUrl}${platformId}/${gameId}/timeline?gameHash=${gameHash}`;
-      console.log(gameUrl);
-      console.log(timelineUrl);
 
-      this.handleGameData(gameUrl, timelineUrl);
+      const thread = await this.handleGameData(url, gameUrl, timelineUrl);
+      console.log(thread);
     }
   },
   async created() {
