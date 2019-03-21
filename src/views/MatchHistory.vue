@@ -22,13 +22,30 @@ export default {
     MatchHistoryInput
   },
   methods: {
+    getFormattedBans(team) {
+      let banString = '';
+      team.bans.forEach(ban => {
+        const champion = this.champions.find(
+          champion => parseInt(champion.key) === ban.championId
+        );
+        const championName = champion.name.toLowerCase();
+        const championDivider =
+          ban.pickTurn === 5 || ban.pickTurn === 6 ? '|' : ' ';
+        banString += `[${championName}](#c-${championName})${championDivider}`;
+      });
+
+      console.log(banString);
+    },
     async handleGameData(gameUrl) {
       const response = await axios.get(
         `${'https://cors-anywhere.herokuapp.com/'}${gameUrl}`
       );
       const gameData = response.data;
-      const participantIdentities = gameData.participantIdentities;
-      console.log(participantIdentities);
+      const { participantIdentities, teams, participants } = gameData;
+      const [teamOne, teamTwo] = teams;
+      teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
+      teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
+      this.getFormattedBans(teamOne);
     },
     async createThread(url) {
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
