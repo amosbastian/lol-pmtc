@@ -1,12 +1,29 @@
 <template>
-  <div class="home">
+  <div class="h-screen flex flex-col">
     <match-history-input v-on:urlSubmitted="getThread($event)" />
-    <div class="container mx-auto min-h-full">
-      <div class="flex justify-center align-center text-white" v-if="loading">
-        Loading...
+    <div class="flex flex-1 flex-col justify-center items-center">
+      <div class="text-white" v-if="loading">
+        <self-building-square-spinner
+          :animation-duration="6000"
+          :size="40"
+          color="#ffffff"
+        />
       </div>
-      <div class="flex justify-center align-center">
-        <textarea class="w-1/2 h-64" v-if="thread" v-model="thread"></textarea>
+      <div
+        class="w-2/3 flex flex-col justify-center items-center"
+        v-show="thread"
+      >
+        <div class="w-2/3 flex flex-grow justify-end">
+          <button
+            v-clipboard:copy="thread"
+            v-clipboard:success="onCopy"
+            v-clipboard:error="onError"
+            class="py-2 px-4 bg-purple-dark text-white hover:bg-purple focus:outline-none focus:border-purple"
+          >
+            Copy
+          </button>
+        </div>
+        <textarea class="w-2/3 h-64" v-model="thread"></textarea>
       </div>
     </div>
   </div>
@@ -14,6 +31,7 @@
 
 <script>
 import { createThread } from '@/utils/matchHistory.js';
+import { SelfBuildingSquareSpinner } from 'epic-spinners';
 import MatchHistoryInput from '@/components/MatchHistoryInput.vue';
 
 export default {
@@ -27,11 +45,13 @@ export default {
     };
   },
   components: {
-    MatchHistoryInput
+    MatchHistoryInput,
+    SelfBuildingSquareSpinner
   },
   methods: {
     async getThread(url) {
       this.loading = true;
+      this.thread = '';
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
       const pattern = /\/([A-Z\d]+)\/(\d+)\?gameHash=([a-z\d]+)/;
       const matchingGroups = pattern.exec(url);
@@ -49,6 +69,12 @@ export default {
       const thread = await createThread(url, gameUrl, timelineUrl);
       this.loading = false;
       this.thread = thread;
+    },
+    onCopy() {
+      alert('Copied text');
+    },
+    onError() {
+      alert('Something went wrong');
     }
   }
 };
