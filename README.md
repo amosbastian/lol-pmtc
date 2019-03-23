@@ -1,5 +1,7 @@
 # lol-pmtc
 
+An application for converting LoL match histories to post-match threads for Reddit.
+
 ## Project setup
 ```
 npm install
