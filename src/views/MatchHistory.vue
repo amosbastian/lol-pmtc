@@ -62,6 +62,7 @@ export default {
       this.loading = true;
       this.thread = '';
 
+      // Get information needed to construct the URLs
       const [, platformId, gameId, gameHash] = matchingGroups;
       const gameUrl = `${baseUrl}${platformId}/${gameId}?gameHash=${gameHash}`;
       const timelineUrl = `${baseUrl}${platformId}/${gameId}/timeline?gameHash=${gameHash}`;

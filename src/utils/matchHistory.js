@@ -15,6 +15,7 @@ function indexToRole(index) {
 }
 
 function getTeamKDA(team) {
+  // Count all kills, deaths and assists of the team's players
   const totalKills = team.reduce((a, b) => a + (b.stats.kills || 0), 0);
   const totalDeaths = team.reduce((a, b) => a + (b.stats.deaths || 0), 0);
   const totalAssists = team.reduce((a, b) => a + (b.stats.assists || 0), 0);
@@ -31,6 +32,7 @@ function getPlayerKDA(player) {
 }
 
 function getPlayerName(playerId) {
+  // Find player identity and split name by team, e.g. FNC Bwipo -> Bwipo
   return playerIdentities
     .find(player => player.participantId === playerId)
     .player.summonerName.split(' ')
@@ -39,6 +41,7 @@ function getPlayerName(playerId) {
 }
 
 function getFormattedChampion(champion) {
+  // For Reddit champion icons
   const championName = champion.replace(' ', '');
   return `[${championName}](#c-${championName})`;
 }
@@ -59,6 +62,8 @@ function getFormattedBans(team) {
         .find(champion => parseInt(champion.key) === ban.championId)
         .name.toLowerCase()
     );
+
+    // Add divider if current ban is the last ban of either team's first round
     const championDivider =
       ban.pickTurn === 5 || ban.pickTurn === 6 ? '|' : ' ';
     banString += `${champion}${championDivider}`;
@@ -70,12 +75,14 @@ function getFormattedBans(team) {
 function getScoreboard(teamOneName, teamTwoName, players) {
   const teamOnePlayers = players.slice(0, 5);
   const teamTwoPlayers = players.slice(5);
+
   const teamOneKDA = getTeamKDA(teamOnePlayers);
   const teamTwoKDA = getTeamKDA(teamTwoPlayers);
 
   const tableHeader = `|**${teamOneName}**|${teamOneKDA}|[vs](#mt-kills)|${teamTwoKDA}|**${teamTwoName}**|`;
   let tableBody = '\n|--:|--:|:--:|:--|:--|\n';
 
+  // Iterate over both team's players in pairs: TOP -> JNG etc.
   teamOnePlayers.map((playerOne, index) => {
     const playerTwo = teamTwoPlayers[index];
     const role = indexToRole(index);
@@ -91,11 +98,14 @@ function getScoreboard(teamOneName, teamTwoName, players) {
 
     tableBody += `|${playerOneName} ${championOne}|${playerOneKDA}|${role}|${playerTwoKDA}|${championTwo} ${playerTwoName}|\n`;
   });
+
   const formattedTable = tableHeader + tableBody;
+
   return formattedTable;
 }
 
 function getMonsterName(event) {
+  // Epic monster icons for Reddit
   const eventTypes = {
     AIR_DRAGON: '[C](#mt-cloud)',
     WATER_DRAGON: '[M](#mt-ocean)',
@@ -104,14 +114,17 @@ function getMonsterName(event) {
     BARON_NASHOR: '[B](#mt-barons)',
     RIFTHERALD: '[H](#mt-herald)'
   };
+
   if (event.monsterType === 'DRAGON') {
     return eventTypes[event.monsterSubType];
   }
+
   return eventTypes[event.monsterType];
 }
 
 function formatMonsters(events) {
   let monsterString = '';
+
   events.forEach(event => {
     const monsterName = getMonsterName(event);
     monsterString += `${monsterName}^${event.order} `;
@@ -124,11 +137,15 @@ async function getEpicMonsters(timelineUrl) {
   const response = await axios.get(
     `${'https://cors-anywhere.herokuapp.com/'}${timelineUrl}`
   );
+
+  // Flatten the object so it can be filtered easily
   const allEvents = response.data.frames.map(frame => frame.events).flat();
   const importantEvents = allEvents.filter(
     event => event.type === 'ELITE_MONSTER_KILL'
   );
+  // Set the order the monsters were taken in
   importantEvents.forEach((event, index) => (event.order = index + 1));
+
   const teamOneEvents = importantEvents.filter(event => event.killerId < 6);
   const teamTwoEvents = importantEvents.filter(event => event.killerId > 5);
 
@@ -189,6 +206,8 @@ async function createThread(matchHistoryUrl, gameUrl, timelineUrl) {
   playerIdentities = participantIdentities;
 
   const [teamOne, teamTwo] = teams;
+
+  // Get each team's acronym from a player's name, e.g. Fnatic -> FNC
   teamOne.name = participantIdentities[0].player.summonerName.split(' ')[0];
   teamTwo.name = participantIdentities[5].player.summonerName.split(' ')[0];
 
