@@ -50,17 +50,17 @@ export default {
   },
   methods: {
     async getThread(url) {
-      this.loading = true;
-      this.thread = '';
       const baseUrl = 'https://acs.leagueoflegends.com/v1/stats/game/';
       const pattern = /\/([A-Z\d]+)\/(\d+)\?gameHash=([a-z\d]+)/;
       const matchingGroups = pattern.exec(url);
 
       if (!matchingGroups) {
-        // TODO: handle error properly
-        alert('ERROR! ERROR! ERROR!');
+        this.$toasted.error('Something went wrong!').goAway(1500);
         return;
       }
+
+      this.loading = true;
+      this.thread = '';
 
       const [, platformId, gameId, gameHash] = matchingGroups;
       const gameUrl = `${baseUrl}${platformId}/${gameId}?gameHash=${gameHash}`;
@@ -71,10 +71,10 @@ export default {
       this.thread = thread;
     },
     onCopy() {
-      alert('Copied text');
+      this.$toasted.success('Copied!').goAway(1500);
     },
     onError() {
-      alert('Something went wrong');
+      this.$toasted.error('Something went wrong!').goAway(1500);
     }
   }
 };
