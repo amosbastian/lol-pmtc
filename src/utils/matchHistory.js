@@ -184,7 +184,7 @@ function getThreadHeader(teamOne, teamTwo, gameDuration, url) {
 
 async function loadChampions() {
   const versions = await axios.get(
-    'http://ddragon.leagueoflegends.com/api/versions.json'
+    'https://ddragon.leagueoflegends.com/api/versions.json'
   );
   const currentPatch = versions.data[0];
   const response = await axios.get(
